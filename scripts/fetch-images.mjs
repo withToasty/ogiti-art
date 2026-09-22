@@ -101,6 +101,20 @@ async function cmdSearch(onlyId) {
   console.log('File: を除いたファイル名（例: "The Angelus, Jean-Francois Millet.jpg"）を設定してください。');
 }
 
+async function downloadBinary(url, retries = 3) {
+  const res = await fetch(url, { headers: { 'User-Agent': 'ogiti-art-image-fetcher/1.0 (educational quiz project)' } });
+  if (res.status === 429 && retries > 0) {
+    const retryAfter = Number(res.headers.get('retry-after')) || 5;
+    console.log(`    (rate limited on download, waiting ${retryAfter}s...)`);
+    await sleep(retryAfter * 1000);
+    return downloadBinary(url, retries - 1);
+  }
+  if (!res.ok) throw new Error(`download failed ${res.status} for ${url}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  await sleep(300);
+  return buf;
+}
+
 async function downloadOne(entry) {
   if (!entry.file) {
     console.log(`  [skip] ${entry.id}: manifest に "file" が未設定です（先に search で確認してください）`);
@@ -116,9 +130,7 @@ async function downloadOne(entry) {
   const usageTerms = plain(info.extmetadata?.UsageTerms?.value) || '';
   console.log(`  ${entry.id}: license = ${license}${usageTerms ? ` (${usageTerms})` : ''}`);
 
-  const res = await fetch(info.url, { headers: { 'User-Agent': 'ogiti-art-image-fetcher/1.0 (educational quiz project)' } });
-  if (!res.ok) throw new Error(`download failed ${res.status} for ${info.url}`);
-  const buf = Buffer.from(await res.arrayBuffer());
+  const buf = await downloadBinary(info.url);
   const ext = path.extname(new URL(info.url).pathname) || '.jpg';
   const outPath = path.join(IMAGES_DIR, `${entry.id}${ext}`);
   await fs.writeFile(outPath, buf);
