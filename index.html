@@ -88,6 +88,25 @@
   .answer-box .meta{font-size:13px; color:var(--sub);}
   .answer-box .desc{font-size:14px; line-height:1.8;}
   .your-guess{font-size:13px; color:var(--sub);}
+  .community{
+    border-top:1px dashed var(--line); padding-top:14px; display:flex;
+    flex-direction:column; gap:8px;
+  }
+  .community-title{font-size:13px; font-weight:700; color:var(--sub);}
+  .community-list{display:flex; flex-direction:column; gap:6px;}
+  .community-empty{font-size:13px; color:var(--sub);}
+  .community-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:8px 10px;
+  }
+  .community-text{font-size:14px; word-break:break-word;}
+  .like-btn{
+    flex-shrink:0; display:flex; align-items:center; gap:4px;
+    background:transparent; border:1px solid var(--line); border-radius:999px;
+    padding:4px 10px; font-size:13px; color:var(--ink); cursor:pointer;
+  }
+  .like-btn:disabled{opacity:.7; cursor:default;}
   .hidden{display:none;}
   footer{font-size:11px; color:var(--sub); text-align:center; padding:8px 0 4px; line-height:1.6;}
   .start-hero{font-size:44px; text-align:center; margin:12px 0;}
@@ -96,7 +115,110 @@
 <body>
 <div class="wrap" id="app"></div>
 
+<!-- みんなの回答機能用（Firestore）。設定手順は README.md を参照。
+     未設定のままでも動作する（このセクションが自動的に非表示になるだけ）。 -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <script>
+// ---- みんなの回答機能（Firestore）----
+// Firebaseプロジェクトを作成し、下記を実際の設定値に置き換えると有効になる。
+// プレースホルダーのままなら db は null のままになり、機能全体が自動的に無効化される。
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const MAX_ANSWER_LEN = 60;
+
+let db = null;
+try {
+  if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY" && typeof firebase !== 'undefined') {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  }
+} catch (e) {
+  console.warn('Firebase init failed', e);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function hasLiked(docId){
+  try { return localStorage.getItem('liked_' + docId) === '1'; } catch { return false; }
+}
+function markLiked(docId){
+  try { localStorage.setItem('liked_' + docId, '1'); } catch {}
+}
+
+async function submitCommunityAnswer(workId, text){
+  if (!db || !text) return;
+  try {
+    await db.collection('answers').add({
+      workId,
+      text: text.slice(0, MAX_ANSWER_LEN),
+      likes: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) {
+    console.warn('failed to submit community answer', e);
+  }
+}
+
+async function fetchCommunityAnswers(workId){
+  if (!db) return [];
+  try {
+    const snap = await db.collection('answers').where('workId', '==', workId).limit(30).get();
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    list.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    return list.slice(0, 5);
+  } catch (e) {
+    console.warn('failed to fetch community answers', e);
+    return [];
+  }
+}
+
+async function loadCommunityAnswers(workId){
+  const listEl = document.getElementById('communityList');
+  if (!listEl) return;
+  const answers = await fetchCommunityAnswers(workId);
+  if (answers.length === 0) {
+    listEl.innerHTML = `<div class="community-empty">まだ回答がありません。最初の投稿者になろう。</div>`;
+    return;
+  }
+  listEl.innerHTML = answers.map(a => `
+    <div class="community-item">
+      <span class="community-text">${escapeHtml(a.text)}</span>
+      <button class="like-btn" data-id="${a.id}" ${hasLiked(a.id) ? 'disabled' : ''}>
+        <span class="like-icon">${hasLiked(a.id) ? '❤️' : '🤍'}</span>
+        <span class="like-count">${a.likes || 0}</span>
+      </button>
+    </div>
+  `).join('');
+  listEl.querySelectorAll('.like-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const docId = btn.dataset.id;
+      if (hasLiked(docId)) return;
+      markLiked(docId);
+      btn.disabled = true;
+      btn.querySelector('.like-icon').textContent = '❤️';
+      const countEl = btn.querySelector('.like-count');
+      countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
+      try {
+        await db.collection('answers').doc(docId).update({
+          likes: firebase.firestore.FieldValue.increment(1)
+        });
+      } catch (e) {
+        console.warn('failed to like', e);
+      }
+    };
+  });
+}
+
 // ---- 作品データ ----
 // image: ローカル画像パス（images/<id>.jpg）。ファイルが存在しない/読み込めない場合は
 //        自動的にヒントのプレースホルダー表示にフォールバックする。
@@ -227,14 +349,16 @@ function renderQuestion(){
     <div class="progress">問題 ${idx+1} / ${WORKS.length}</div>
     <div class="card">
       <div class="frame" id="frame"></div>
-      <input type="text" id="guessInput" placeholder="この絵のタイトル、何？" autocomplete="off">
+      <input type="text" id="guessInput" placeholder="この絵のタイトル、何？" autocomplete="off" maxlength="${MAX_ANSWER_LEN}">
       <button class="primary" id="revealBtn">答え合わせ</button>
     </div>
   `;
   renderFrame(document.getElementById('frame'), w);
   document.getElementById('revealBtn').onclick = () => {
-    const val = document.getElementById('guessInput').value.trim() || "（未回答）";
+    const raw = document.getElementById('guessInput').value.trim();
+    const val = raw || "（未回答）";
     guesses.push(val);
+    if (raw) submitCommunityAnswer(w.id, raw);
     renderAnswer();
   };
   document.getElementById('guessInput').addEventListener('keydown', e=>{
@@ -255,10 +379,12 @@ function renderAnswer(){
         <div class="meta">${w.artist} ／ ${w.year}</div>
         <div class="desc">${w.desc}</div>
       </div>
+      ${db ? `<div class="community"><div class="community-title">みんなの回答</div><div class="community-list" id="communityList">読み込み中…</div></div>` : ''}
       <button class="primary" id="nextBtn">${isLast ? '結果を見る' : '次の絵へ'}</button>
     </div>
   `;
   renderFrame(document.getElementById('frame'), w);
+  if (db) loadCommunityAnswers(w.id);
   document.getElementById('nextBtn').onclick = () => {
     if(isLast){ renderResult(); } else { idx++; renderQuestion(); }
   };

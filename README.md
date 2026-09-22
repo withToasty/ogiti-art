@@ -34,6 +34,59 @@
 （`https://<ユーザー名>.github.io/ogiti-art/` を想定して仮設定済み）に合わせて確認・修正する。
 SNSでリンクをシェアした際に `images/og-image.jpg` がプレビュー画像として表示される。
 
+## みんなの回答機能（Firebase）
+
+答え合わせ画面に、他の人が投稿した回答を見て「いいね」できる「みんなの回答」セクションがある。
+バックエンドに [Firebase Firestore](https://firebase.google.com/) を使用。
+
+**未設定でも動作する**：`index.html` 内の `FIREBASE_CONFIG` がプレースホルダーのままの場合、
+この機能全体が自動的に無効化される（セクション自体が表示されない）だけで、他の機能に影響はない。
+
+### 有効化する手順
+
+1. [Firebase Console](https://console.firebase.google.com/) で新規プロジェクトを作成（無料のSparkプランでOK）
+2. 左メニューの **Firestore Database** → **データベースを作成**（本番環境モードでOK、リージョンは任意）
+3. **Firestore Database → ルール** タブを開き、下記のルールに置き換えて公開
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /answers/{answerId} {
+         allow read: if true;
+
+         allow create: if request.resource.data.keys().hasOnly(['workId', 'text', 'likes', 'createdAt'])
+           && request.resource.data.workId is string
+           && request.resource.data.workId.size() > 0
+           && request.resource.data.workId.size() < 40
+           && request.resource.data.text is string
+           && request.resource.data.text.size() > 0
+           && request.resource.data.text.size() <= 60
+           && request.resource.data.likes == 0
+           && request.resource.data.createdAt == request.time;
+
+         allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+           && request.resource.data.likes == resource.data.likes + 1;
+
+         allow delete: if false;
+       }
+     }
+   }
+   ```
+
+4. **プロジェクトの設定**（左上の歯車アイコン）→ 下部の「アプリ」で **ウェブアプリを追加**
+5. 表示される `firebaseConfig` オブジェクトの値を、`index.html` の `FIREBASE_CONFIG` にそのままコピーする
+   （Firebaseのウェブ用APIキーは公開前提の値。秘匿する必要はなく、実際のアクセス制御は上記のFirestoreルールで行う）
+
+### 既知の制限・注意点
+
+- **モデレーション機能はない**。投稿されたテキストはそのまま公開表示される（60文字以内・空文字不可の
+  制約のみ）。不適切な投稿が入った場合は、Firebase ConsoleのFirestore Database画面から該当ドキュメントを
+  手動で削除する
+- 「いいね」の二重押下防止はブラウザの `localStorage` ベース（ブラウザ・端末をまたぐと再度押せてしまう）
+- Firestoreの無料枠（1日あたり読み取り5万・書き込み2万）を超えると課金が発生する可能性がある。個人の
+  ちょっとしたアクセス数であれば通常は無料枠内に収まる
+
 ## 技術方針
 
 - データは HTML 内に JS 配列として埋め込み
