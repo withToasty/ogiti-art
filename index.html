@@ -22,10 +22,15 @@
 <meta name="twitter:title" content="名画タイトル当て">
 <meta name="twitter:description" content="著作権の切れた名画を見て、タイトルを当ててみる一人用アプリ。全10問、判定・採点なし。">
 <meta name="twitter:image" content="https://withtoasty.github.io/ogiti-art/images/og-image.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#f7f3ec; --card:#ffffff; --ink:#2b2620; --sub:#7a7267;
     --accent:#c8593a; --accent-ink:#ffffff; --line:#e6ddd0;
+    --shadow: 0 1px 2px rgba(43,38,32,.05), 0 14px 28px -16px rgba(43,38,32,.28);
+    --frame-ring: rgba(43,38,32,.08);
     box-sizing:border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -34,18 +39,22 @@
     :root:not([data-theme="light"]){
       --bg:#1c1a17; --card:#26221d; --ink:#efe8de; --sub:#a89e90;
       --accent:#e0764f; --accent-ink:#1c1a17; --line:#3a352d;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 28px -16px rgba(0,0,0,.6);
+      --frame-ring: rgba(255,255,255,.08);
     }
   }
   :root[data-theme="dark"]{
     --bg:#1c1a17; --card:#26221d; --ink:#efe8de; --sub:#a89e90;
     --accent:#e0764f; --accent-ink:#1c1a17; --line:#3a352d;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 28px -16px rgba(0,0,0,.6);
+    --frame-ring: rgba(255,255,255,.08);
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   html{scroll-padding-top: env(safe-area-inset-top, 0px);}
   body{
     margin:0; background:var(--bg); color:var(--ink);
-    font-family:"Hiragino Sans","Yu Gothic",sans-serif;
+    font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
     display:flex; flex-direction:column; align-items:center;
     min-height:100%;
   }
@@ -53,22 +62,43 @@
     width:100%; max-width:480px; padding:24px 20px 40px;
     display:flex; flex-direction:column; gap:16px; flex:1;
   }
-  h1{font-size:22px; margin:8px 0 0; letter-spacing:.02em;}
+  h1{
+    font-family:"Shippori Mincho",serif; font-weight:700;
+    font-size:24px; margin:8px 0 0; letter-spacing:.03em;
+  }
   .lead{color:var(--sub); font-size:14px; line-height:1.7; margin:0;}
   .card{
     background:var(--card); border:1px solid var(--line); border-radius:16px;
     padding:20px; display:flex; flex-direction:column; gap:14px;
+    box-shadow:var(--shadow);
+    animation:cardIn .3s ease both;
   }
-  .progress{font-size:12px; color:var(--sub); letter-spacing:.05em;}
+  @keyframes cardIn{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card{ animation:none; }
+  }
+  .progress{display:flex; flex-direction:column; gap:6px;}
+  .progress-label{font-size:12px; color:var(--sub); letter-spacing:.05em;}
+  .progress-bar{height:4px; border-radius:999px; background:var(--line); overflow:hidden;}
+  .progress-fill{height:100%; background:var(--accent); border-radius:999px; transition:width .3s ease;}
   .frame{
     width:100%; aspect-ratio:4/3; border-radius:12px; overflow:hidden;
     display:flex; align-items:center; justify-content:center; text-align:center;
     background:linear-gradient(135deg,#d8cdb8,#b7a98d); color:#4a4030;
     font-size:14px; padding:16px; position:relative;
+    box-shadow: inset 0 0 0 1px var(--frame-ring), 0 10px 20px -12px rgba(43,38,32,.35);
   }
   .frame img{width:100%; height:100%; object-fit:cover; display:block;}
   .frame .ph{padding:0 12px;}
   .frame .ph b{display:block; font-size:22px; margin-bottom:6px;}
+  .hero-strip{display:flex; gap:6px;}
+  .hero-strip img{
+    flex:1; min-width:0; aspect-ratio:1; object-fit:cover; border-radius:10px;
+    box-shadow:var(--shadow);
+  }
   input[type=text]{
     width:100%; padding:14px; border-radius:10px; border:1px solid var(--line);
     background:var(--bg); color:var(--ink); font-size:16px;
@@ -76,16 +106,21 @@
   button{
     border:none; border-radius:10px; padding:14px; font-size:15px;
     font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
   }
-  .primary{background:var(--accent); color:var(--accent-ink);}
+  .primary{
+    background:var(--accent); color:var(--accent-ink);
+    box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  .primary:active{ transform:scale(.98); box-shadow:none; }
   .ghost{background:transparent; color:var(--sub); border:1px solid var(--line);}
   .row{display:flex; gap:10px;}
   .answer-box{
     border-top:1px dashed var(--line); padding-top:14px; display:flex;
     flex-direction:column; gap:8px;
   }
-  .answer-box .real-title{font-size:18px; font-weight:700;}
-  .answer-box .meta{font-size:13px; color:var(--sub);}
+  .answer-box .real-title{font-family:"Shippori Mincho",serif; font-size:19px; font-weight:700;}
+  .answer-box .meta{font-size:13px; color:var(--sub); letter-spacing:.03em;}
   .answer-box .desc{font-size:14px; line-height:1.8;}
   .your-guess{font-size:13px; color:var(--sub);}
   .community{
@@ -352,7 +387,12 @@ function renderFrame(container, w){
 
 function renderStart(){
   app.innerHTML = `
-    <div class="start-hero">🖼️</div>
+    <div class="hero-strip">
+      <img src="images/angelus.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+      <img src="images/scream.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+      <img src="images/pearl-earring.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+      <img src="images/great-wave.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+    </div>
     <h1>名画タイトル当て</h1>
     <p class="lead">著作権の切れた名画を見て、タイトルを当ててみてください。答え合わせのあとに本当の背景も解説します。全${WORKS.length}問。</p>
     <div class="card">
@@ -366,7 +406,10 @@ function renderStart(){
 function renderQuestion(){
   const w = WORKS[idx];
   app.innerHTML = `
-    <div class="progress">問題 ${idx+1} / ${WORKS.length}</div>
+    <div class="progress">
+      <div class="progress-label">問題 ${idx+1} / ${WORKS.length}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${((idx+1)/WORKS.length)*100}%"></div></div>
+    </div>
     <div class="card">
       <div class="frame" id="frame"></div>
       <input type="text" id="guessInput" placeholder="この絵のタイトル、何？" autocomplete="off" maxlength="${MAX_ANSWER_LEN}">
@@ -402,7 +445,10 @@ function renderAnswer(){
   const w = WORKS[idx];
   const isLast = idx === WORKS.length - 1;
   app.innerHTML = `
-    <div class="progress">問題 ${idx+1} / ${WORKS.length}</div>
+    <div class="progress">
+      <div class="progress-label">問題 ${idx+1} / ${WORKS.length}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${((idx+1)/WORKS.length)*100}%"></div></div>
+    </div>
     <div class="card">
       <div class="frame" id="frame"></div>
       <div class="your-guess">あなたの回答：${guesses[idx]}</div>
