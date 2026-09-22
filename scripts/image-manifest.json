@@ -1,15 +1,15 @@
 {
   "_comment": "各作品の Commons 検索クエリ。search コマンドで候補を確認し、file に確定ファイル名（File: を除く）を設定してから download を実行する。",
   "works": [
-    { "id": "angelus", "query": "The Angelus Jean-François Millet painting", "file": null },
-    { "id": "scream", "query": "The Scream Edvard Munch 1893 National Gallery Norway", "file": null },
-    { "id": "pearl-earring", "query": "Girl with a Pearl Earring Vermeer Mauritshuis", "file": null },
-    { "id": "great-wave", "query": "The Great Wave off Kanagawa Hokusai", "file": null },
-    { "id": "saturn", "query": "Saturn Devouring His Son Goya Prado", "file": null },
-    { "id": "icarus", "query": "Landscape with the Fall of Icarus Bruegel", "file": null },
-    { "id": "ophelia", "query": "Ophelia John Everett Millais Tate", "file": null },
-    { "id": "gulf-stream", "query": "The Gulf Stream Winslow Homer Metropolitan Museum", "file": null },
-    { "id": "nightmare", "query": "The Nightmare Henry Fuseli Detroit Institute of Arts", "file": null },
-    { "id": "liberty", "query": "Liberty Leading the People Delacroix Louvre", "file": null }
+    { "id": "angelus", "query": "The Angelus Jean-François Millet painting", "file": "Jean-François Millet - The Angelus - Google Art Project.jpg" },
+    { "id": "scream", "query": "The Scream Edvard Munch 1893 National Gallery Norway", "file": "Edvard Munch, 1893, The Scream, oil, tempera and pastel on cardboard, 91 x 73 cm, National Gallery of Norway.jpg" },
+    { "id": "pearl-earring", "query": "Girl with a Pearl Earring Vermeer Mauritshuis", "file": "Girl with a Pearl Earring.jpg" },
+    { "id": "great-wave", "query": "The Great Wave off Kanagawa Hokusai", "file": "The Great Wave off Kanagawa.jpg" },
+    { "id": "saturn", "query": "Saturn Devouring His Son Goya Prado", "file": "Francisco de Goya, Saturno devorando a su hijo (1819-1823).jpg" },
+    { "id": "icarus", "query": "Landscape with the Fall of Icarus Bruegel", "file": "Pieter Bruegel the Elder - Landscape with the Fall of Icarus - WGA03321.jpg" },
+    { "id": "ophelia", "query": "Ophelia John Everett Millais Tate", "file": "John Everett Millais - Ophelia - Google Art Project.jpg" },
+    { "id": "gulf-stream", "query": "The Gulf Stream Winslow Homer Metropolitan Museum", "file": "Winslow Homer - The Gulf Stream - Metropolitan Museum of Art.jpg" },
+    { "id": "nightmare", "query": "The Nightmare Henry Fuseli Detroit Institute of Arts", "file": "John Henry Fuseli - The NightmareFXD.jpg" },
+    { "id": "liberty", "query": "Liberty Leading the People Delacroix Louvre", "file": "Eugène Delacroix - La liberté guidant le peuple.jpg" }
   ]
 }
