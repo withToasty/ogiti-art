@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>名画タイトル大喜利</title>
+<style>
+  :root{
+    --bg:#f7f3ec; --card:#ffffff; --ink:#2b2620; --sub:#7a7267;
+    --accent:#c8593a; --accent-ink:#ffffff; --line:#e6ddd0;
+    box-sizing:border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1c1a17; --card:#26221d; --ink:#efe8de; --sub:#a89e90;
+      --accent:#e0764f; --accent-ink:#1c1a17; --line:#3a352d;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1c1a17; --card:#26221d; --ink:#efe8de; --sub:#a89e90;
+    --accent:#e0764f; --accent-ink:#1c1a17; --line:#3a352d;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  html{scroll-padding-top: env(safe-area-inset-top, 0px);}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Hiragino Sans","Yu Gothic",sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100%;
+  }
+  .wrap{
+    width:100%; max-width:480px; padding:24px 20px 40px;
+    display:flex; flex-direction:column; gap:16px; flex:1;
+  }
+  h1{font-size:22px; margin:8px 0 0; letter-spacing:.02em;}
+  .lead{color:var(--sub); font-size:14px; line-height:1.7; margin:0;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:20px; display:flex; flex-direction:column; gap:14px;
+  }
+  .progress{font-size:12px; color:var(--sub); letter-spacing:.05em;}
+  .frame{
+    width:100%; aspect-ratio:4/3; border-radius:12px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    background:linear-gradient(135deg,#d8cdb8,#b7a98d); color:#4a4030;
+    font-size:14px; padding:16px; position:relative;
+  }
+  .frame img{width:100%; height:100%; object-fit:cover; display:block;}
+  .frame .ph{padding:0 12px;}
+  .frame .ph b{display:block; font-size:22px; margin-bottom:6px;}
+  input[type=text]{
+    width:100%; padding:14px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:16px;
+  }
+  button{
+    border:none; border-radius:10px; padding:14px; font-size:15px;
+    font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .primary{background:var(--accent); color:var(--accent-ink);}
+  .ghost{background:transparent; color:var(--sub); border:1px solid var(--line);}
+  .row{display:flex; gap:10px;}
+  .answer-box{
+    border-top:1px dashed var(--line); padding-top:14px; display:flex;
+    flex-direction:column; gap:8px;
+  }
+  .answer-box .real-title{font-size:18px; font-weight:700;}
+  .answer-box .meta{font-size:13px; color:var(--sub);}
+  .answer-box .desc{font-size:14px; line-height:1.8;}
+  .your-guess{font-size:13px; color:var(--sub);}
+  .hidden{display:none;}
+  footer{font-size:11px; color:var(--sub); text-align:center; padding:8px 0 4px; line-height:1.6;}
+  .start-hero{font-size:44px; text-align:center; margin:12px 0;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+// ---- 作品データ ----
+// image: ローカル画像パス（images/<id>.jpg）。ファイルが存在しない/読み込めない場合は
+//        自動的にヒントのプレースホルダー表示にフォールバックする。
+//        画像の取得方法は images/README.md と scripts/fetch-images.mjs を参照。
+const WORKS = [
+  {
+    id: "angelus",
+    image: "images/angelus.jpg",
+    title: "晩鐘（The Angelus）",
+    artist: "ジャン＝フランソワ・ミレー", year: "1857–59年",
+    hint: "夕暮れの畑にたたずむ二人の農民",
+    desc: "畑仕事の合間に鳴る教会の鐘の音に合わせ、祈りを捧げる夫婦を描いた作品。もとは死んだ子への祈りを描く構想だったが、友人の助言で「アンジェラスの祈り」の場面に変更されたという逸話がある。"
+  },
+  {
+    id: "scream",
+    image: "images/scream.jpg",
+    title: "叫び（The Scream）",
+    artist: "エドヴァルド・ムンク", year: "1893年",
+    hint: "人物が叫んでいるのか、耳をふさいでいるのか",
+    desc: "実はこの人物自身が叫んでいるのではなく、「自然を貫く叫び声」を聞いて耳をふさいでいる場面。ムンクが夕焼けを見て感じた不安発作の記憶を描いたとされる。"
+  },
+  {
+    id: "pearl-earring",
+    image: "images/pearl-earring.jpg",
+    title: "真珠の耳飾りの少女",
+    artist: "ヨハネス・フェルメール", year: "1665年頃",
+    hint: "モデルの正体も物語も不明、表情だけが手がかり",
+    desc: "実在の人物か架空の人物か特定されておらず、物語性のない「トローニー」（人物習作）というジャンルの作品。ターバンや耳飾りは異国趣味の演出とされる。"
+  },
+  {
+    id: "great-wave",
+    image: "images/great-wave.jpg",
+    title: "神奈川沖浪裏",
+    artist: "葛飾北斎", year: "1831年頃",
+    hint: "主役は波か、それとも小さく描かれた山か",
+    desc: "富嶽三十六景の一枚で、実は主題は荒波ではなく遠景の富士山。舟に乗る漁師たちは波にもまれながらも、その先に見える富士を仰いでいる構図になっている。"
+  },
+  {
+    id: "saturn",
+    image: "images/saturn.jpg",
+    title: "我が子を食らうサトゥルヌス",
+    artist: "フランシスコ・デ・ゴヤ", year: "1819–23年頃",
+    hint: "グロテスクで題名を当てるにはギャップがありすぎる",
+    desc: "ゴヤ晩年の「黒い絵」シリーズの一つ。自宅の壁に直接描かれていた作品で、後に息子に地位を奪われることを恐れたローマ神話の神サトゥルヌスの逸話を題材にしている。"
+  },
+  {
+    id: "icarus",
+    image: "images/icarus.jpg",
+    title: "イカロスの墜落のある風景",
+    artist: "ピーテル・ブリューゲル（父）", year: "1560年頃",
+    hint: "イカロスは画面の端に脚だけしか描かれていない",
+    desc: "太陽に近づきすぎて蝋の翼が溶け、海に落ちたイカロスの神話を描いているが、主役のはずのイカロスは画面右下に脚だけ小さく見える程度。農夫や羊飼いは誰も気にも留めていない構図が皮肉とされる。"
+  },
+  {
+    id: "ophelia",
+    image: "images/ophelia.jpg",
+    title: "オフィーリア",
+    artist: "ジョン・エヴァレット・ミレイ", year: "1851–52年",
+    hint: "水に浮かぶ女性、状況だけでは物語が読めない",
+    desc: "シェイクスピア『ハムレット』でハムレットに拒絶され、正気を失って川に落ち歌いながら溺れていくオフィーリアの場面。モデルの女性は実際に浴槽で長時間ポーズを取らされ、体調を崩したという逸話が残る。"
+  },
+  {
+    id: "gulf-stream",
+    image: "images/gulf-stream.jpg",
+    title: "メキシコ湾流",
+    artist: "ウィンズロー・ホーマー", year: "1899年",
+    hint: "サメと嵐の中の男、状況は壮絶だが題名は地味",
+    desc: "帆を失った小舟に横たわる黒人漁師をサメが取り囲む場面。遠くに見える竜巻や船影が助かるかどうかを暗示するのみで、結末は描かれていない。"
+  },
+  {
+    id: "nightmare",
+    image: "images/nightmare.jpg",
+    title: "夢魔（The Nightmare）",
+    artist: "ヘンリー・フューズリ", year: "1781年",
+    hint: "悪魔と馬の頭が突然現れ、状況の説明がつかない",
+    desc: "眠る女性の胸の上に悪夢の象徴である小鬼（インキュバス）が座り、カーテンの隙間から白目を剥いた馬が覗き込む場面。当時の「夢と性」に関する俗信を視覚化した作品とされる。"
+  },
+  {
+    id: "liberty",
+    image: "images/liberty.jpg",
+    title: "民衆を導く自由の女神",
+    artist: "ウジェーヌ・ドラクロワ", year: "1830年",
+    hint: "女性が旗を掲げているが、実在の人物か寓意像か",
+    desc: "1830年のフランス七月革命を題材にした作品で、中央の女性は実在の人物ではなく「自由」を擬人化した寓意像。半裸で描かれているのは古典彫刻の伝統を踏襲した表現とされる。"
+  }
+];
+
+let idx = 0;
+let guesses = [];
+const app = document.getElementById('app');
+
+function renderFrame(container, w){
+  container.innerHTML = '';
+  if (w.image) {
+    const img = document.createElement('img');
+    img.src = w.image;
+    img.alt = w.title;
+    img.loading = 'lazy';
+    img.onerror = () => {
+      img.remove();
+      const ph = document.createElement('div');
+      ph.className = 'ph';
+      ph.innerHTML = `<b>🖼️</b>${w.hint}`;
+      container.appendChild(ph);
+    };
+    container.appendChild(img);
+  } else {
+    container.innerHTML = `<div class="ph"><b>🖼️</b>${w.hint}</div>`;
+  }
+}
+
+function renderStart(){
+  app.innerHTML = `
+    <div class="start-hero">🖼️</div>
+    <h1>名画タイトル大喜利</h1>
+    <p class="lead">著作権の切れた名画を見て、勝手にタイトルを想像してください。答え合わせのあとに本当の背景も解説します。全${WORKS.length}問。</p>
+    <div class="card">
+      <button class="primary" id="startBtn">はじめる</button>
+    </div>
+    <footer>画像出典：パブリックドメイン作品（Wikimedia Commons）</footer>
+  `;
+  document.getElementById('startBtn').onclick = () => { idx = 0; guesses = []; renderQuestion(); };
+}
+
+function renderQuestion(){
+  const w = WORKS[idx];
+  app.innerHTML = `
+    <div class="progress">問題 ${idx+1} / ${WORKS.length}</div>
+    <div class="card">
+      <div class="frame" id="frame"></div>
+      <input type="text" id="guessInput" placeholder="この絵のタイトルは？" autocomplete="off">
+      <button class="primary" id="revealBtn">答え合わせ</button>
+    </div>
+  `;
+  renderFrame(document.getElementById('frame'), w);
+  document.getElementById('revealBtn').onclick = () => {
+    const val = document.getElementById('guessInput').value.trim() || "（未回答）";
+    guesses.push(val);
+    renderAnswer();
+  };
+  document.getElementById('guessInput').addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ document.getElementById('revealBtn').click(); }
+  });
+}
+
+function renderAnswer(){
+  const w = WORKS[idx];
+  const isLast = idx === WORKS.length - 1;
+  app.innerHTML = `
+    <div class="progress">問題 ${idx+1} / ${WORKS.length}</div>
+    <div class="card">
+      <div class="frame" id="frame"></div>
+      <div class="your-guess">あなたの回答：${guesses[idx]}</div>
+      <div class="answer-box">
+        <div class="real-title">正解：${w.title}</div>
+        <div class="meta">${w.artist} ／ ${w.year}</div>
+        <div class="desc">${w.desc}</div>
+      </div>
+      <button class="primary" id="nextBtn">${isLast ? '結果を見る' : '次の絵へ'}</button>
+    </div>
+  `;
+  renderFrame(document.getElementById('frame'), w);
+  document.getElementById('nextBtn').onclick = () => {
+    if(isLast){ renderResult(); } else { idx++; renderQuestion(); }
+  };
+}
+
+function renderResult(){
+  const rows = WORKS.map((w,i)=>`
+    <div class="row" style="justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--line);">
+      <span style="color:var(--sub)">${w.title}</span>
+      <span>${guesses[i]}</span>
+    </div>
+  `).join('');
+  app.innerHTML = `
+    <div class="start-hero">🎉</div>
+    <h1>おつかれさまでした</h1>
+    <p class="lead">全${WORKS.length}問、回答一覧です。</p>
+    <div class="card">
+      ${rows}
+      <button class="primary" id="restartBtn">もう一度あそぶ</button>
+    </div>
+  `;
+  document.getElementById('restartBtn').onclick = renderStart;
+}
+
+renderStart();
+</script>
+</body>
+</html>
