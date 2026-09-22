@@ -37,11 +37,20 @@ async function saveManifest(manifest) {
   await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 }
 
-async function apiGet(params) {
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function apiGet(params, retries = 3) {
   const url = new URL(API);
   url.search = new URLSearchParams({ format: 'json', origin: '*', ...params });
   const res = await fetch(url, { headers: { 'User-Agent': 'ogiti-art-image-fetcher/1.0 (educational quiz project)' } });
+  if (res.status === 429 && retries > 0) {
+    const retryAfter = Number(res.headers.get('retry-after')) || 5;
+    console.log(`  (rate limited, waiting ${retryAfter}s...)`);
+    await sleep(retryAfter * 1000);
+    return apiGet(params, retries - 1);
+  }
   if (!res.ok) throw new Error(`Commons API error ${res.status} ${res.statusText}`);
+  await sleep(300); // avoid tripping Commons' rate limit on rapid sequential calls
   return res.json();
 }
 
