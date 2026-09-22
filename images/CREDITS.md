@@ -50,3 +50,17 @@
 - License: Public domain — Public domain
 - Artist metadata: Eugène Delacroix
 - Credit: This page from 1st-art-gallery.com
+
+### gulf-stream
+- File: File:Winslow Homer - The Gulf Stream - Metropolitan Museum of Art.jpg
+- Source: https://commons.wikimedia.org/wiki/File%3AWinslow%20Homer%20-%20The%20Gulf%20Stream%20-%20Metropolitan%20Museum%20of%20Art.jpg
+- License: Public domain — Public domain
+- Artist metadata: Winslow Homer
+- Credit: 1. The Yorck Project (2002)       10.000 Meisterwerke der Malerei (DVD-ROM), distributed by DIRECTMEDIA Publishing GmbH.  ISBN:  3936122202. 
+
+### nightmare
+- File: File:John Henry Fuseli - The NightmareFXD.jpg
+- Source: https://commons.wikimedia.org/wiki/File%3AJohn%20Henry%20Fuseli%20-%20The%20NightmareFXD.jpg
+- License: Public domain — Public domain
+- Artist metadata: Henry Fuseli
+- Credit: This file was derived from:  John Henry Fuseli - The Nightmare.JPG:
