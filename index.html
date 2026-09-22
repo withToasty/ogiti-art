@@ -107,6 +107,15 @@
     padding:4px 10px; font-size:13px; color:var(--ink); cursor:pointer;
   }
   .like-btn:disabled{opacity:.7; cursor:default;}
+  .share-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .share-btn{
+    flex:1; min-width:100px; text-align:center; text-decoration:none;
+    border-radius:10px; padding:12px 10px; font-size:13px; font-weight:600;
+    border:none; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  .share-x{background:#000; color:#fff;}
+  .share-line{background:#06C755; color:#fff;}
+  .share-copy{background:transparent; color:var(--sub); border:1px solid var(--line);}
   .hidden{display:none;}
   footer{font-size:11px; color:var(--sub); text-align:center; padding:8px 0 4px; line-height:1.6;}
   .start-hero{font-size:44px; text-align:center; margin:12px 0;}
@@ -397,16 +406,37 @@ function renderResult(){
       <span>${guesses[i]}</span>
     </div>
   `).join('');
+
+  const shareText = "名画のタイトルを当ててみた。真面目にいくつもりが、後半は大喜利になった。";
+  const shareUrl = location.href;
+  const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+  const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText + '\n' + shareUrl)}`;
+
   app.innerHTML = `
     <div class="start-hero">🎉</div>
     <h1>おつかれさまでした</h1>
     <p class="lead">全${WORKS.length}問、回答一覧です。</p>
     <div class="card">
       ${rows}
+      <div class="share-row">
+        <a class="share-btn share-x" href="${xShareUrl}" target="_blank" rel="noopener">𝕏でシェア</a>
+        <a class="share-btn share-line" href="${lineShareUrl}" target="_blank" rel="noopener">LINEでシェア</a>
+        <button class="share-btn share-copy" id="copyLinkBtn" type="button">リンクをコピー</button>
+      </div>
       <button class="primary" id="restartBtn">もう一度あそぶ</button>
     </div>
   `;
   document.getElementById('restartBtn').onclick = renderStart;
+  document.getElementById('copyLinkBtn').onclick = async (e) => {
+    const btn = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      btn.textContent = 'コピーしました';
+    } catch {
+      btn.textContent = 'コピーできませんでした';
+    }
+    setTimeout(() => { btn.textContent = 'リンクをコピー'; }, 2000);
+  };
 }
 
 renderStart();
