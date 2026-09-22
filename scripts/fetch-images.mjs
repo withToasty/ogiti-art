@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Wikimedia Commons からパブリックドメイン画像を検索・取得するツール。
-// Node.js 18+（組み込み fetch を使用、追加の依存関係なし）。
+// Node.js 18+。事前に `npm install` が必要（画像リサイズに sharp を使用）。
 //
 // 使い方:
 //   node scripts/fetch-images.mjs search              # 全作品の候補ファイルを検索して表示
@@ -20,6 +20,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
+
+const MAX_DIM = 1400; // 表示は最大480px幅・4:3のカードなので、Retina込みでも十分な大きさ
+const JPEG_QUALITY = 82;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -130,11 +134,15 @@ async function downloadOne(entry) {
   const usageTerms = plain(info.extmetadata?.UsageTerms?.value) || '';
   console.log(`  ${entry.id}: license = ${license}${usageTerms ? ` (${usageTerms})` : ''}`);
 
-  const buf = await downloadBinary(info.url);
-  const ext = path.extname(new URL(info.url).pathname) || '.jpg';
-  const outPath = path.join(IMAGES_DIR, `${entry.id}${ext}`);
+  const rawBuf = await downloadBinary(info.url);
+  const buf = await sharp(rawBuf)
+    .rotate() // EXIF Orientationを反映してから正規化する
+    .resize({ width: MAX_DIM, height: MAX_DIM, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: JPEG_QUALITY, progressive: true, mozjpeg: true })
+    .toBuffer();
+  const outPath = path.join(IMAGES_DIR, `${entry.id}.jpg`);
   await fs.writeFile(outPath, buf);
-  console.log(`  saved -> images/${entry.id}${ext} (${(buf.length / 1024).toFixed(0)} KB)`);
+  console.log(`  saved -> images/${entry.id}.jpg (${(rawBuf.length / 1024).toFixed(0)}KB -> ${(buf.length / 1024).toFixed(0)}KB, max${MAX_DIM}px/q${JPEG_QUALITY})`);
 
   return {
     id: entry.id,

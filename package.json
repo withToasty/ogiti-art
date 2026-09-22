@@ -1,0 +1,13 @@
+{
+  "name": "ogiti-art",
+  "private": true,
+  "description": "著作権の切れた名画のタイトルを予想する一人用クイズWebアプリ（index.htmlのみで動作。devDependenciesは画像取得スクリプト用）",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/withToasty/ogiti-art.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "sharp": "^0.35.4"
+  }
+}

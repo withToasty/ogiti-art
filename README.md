@@ -28,6 +28,11 @@
 単一の静的HTMLなので GitHub Pages でそのまま公開できる（リポジトリ設定の Pages で
 ブランチを指定するのみ）。
 
+**Pagesを有効化したら**、`index.html` の `<head>` にある OGP / Twitter Card の
+`og:url` / `og:image` / `twitter:image` を実際の公開URL
+（`https://<ユーザー名>.github.io/ogiti-art/` を想定して仮設定済み）に合わせて確認・修正する。
+SNSでリンクをシェアした際に `images/og-image.jpg` がプレビュー画像として表示される。
+
 ## 技術方針
 
 - データは HTML 内に JS 配列として埋め込み
