@@ -161,16 +161,24 @@
   .community-empty{font-size:13px; color:var(--sub);}
   .community-item{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
+    flex-wrap:wrap;
     background:var(--bg); border:1px solid var(--line); border-radius:10px;
     padding:8px 10px;
   }
   .community-text{font-size:14px; word-break:break-word;}
+  .community-actions{flex-shrink:0; display:flex; gap:6px; margin-left:auto;}
   .like-btn{
     flex-shrink:0; display:flex; align-items:center; gap:4px;
     background:transparent; border:1px solid var(--line); border-radius:999px;
     padding:4px 10px; font-size:13px; color:var(--ink); cursor:pointer;
   }
   .like-btn:disabled{opacity:.7; cursor:default;}
+  .share-mini-btn{
+    flex-shrink:0; background:transparent; border:1px solid var(--line); border-radius:999px;
+    padding:4px 10px; font-size:12px; color:var(--sub); cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .share-mini-btn:disabled{opacity:.7; cursor:default;}
   .share-row{display:flex; gap:8px; flex-wrap:wrap;}
   .share-btn{
     flex:1; min-width:100px; text-align:center; text-decoration:none;
@@ -473,28 +481,33 @@ async function fetchAnswerCounts(){
 async function loadCommunityAnswers(workId){
   const listEl = document.getElementById('communityList');
   if (!listEl) return;
-  const answers = await fetchCommunityAnswers(workId);
-  if (answers.length === 0) {
+  const communityAnswers = await fetchCommunityAnswers(workId);
+  if (communityAnswers.length === 0) {
     listEl.innerHTML = `<div class="community-empty">まだ回答がありません。最初の投稿者になろう。</div>`;
     return;
   }
-  listEl.innerHTML = answers.map(a => `
+  listEl.innerHTML = communityAnswers.map(a => `
     <div class="community-item">
       <span class="community-text">${escapeHtml(a.text)}</span>
-      <button class="like-btn" data-id="${a.id}" ${hasLiked(a.id) ? 'disabled' : ''}>
-        <span class="like-icon">${hasLiked(a.id) ? '❤️' : '🤍'}</span>
-        <span class="like-count">${a.likes || 0}</span>
-      </button>
+      <span class="community-actions">
+        <button class="like-btn" data-id="${a.id}" ${hasLiked(a.id) ? 'disabled' : ''}>
+          <span class="like-icon">${hasLiked(a.id) ? '❤️' : '🤍'}</span>
+          <span class="like-count">${a.likes || 0}</span>
+        </button>
+        <button class="share-mini-btn" type="button">画像でシェア</button>
+      </span>
     </div>
   `).join('');
-  listEl.querySelectorAll('.like-btn').forEach(btn => {
-    btn.onclick = async () => {
-      const docId = btn.dataset.id;
+  listEl.querySelectorAll('.community-item').forEach((itemEl, i) => {
+    const a = communityAnswers[i];
+    const likeBtn = itemEl.querySelector('.like-btn');
+    likeBtn.onclick = async () => {
+      const docId = a.id;
       if (hasLiked(docId)) return;
       markLiked(docId);
-      btn.disabled = true;
-      btn.querySelector('.like-icon').textContent = '❤️';
-      const countEl = btn.querySelector('.like-count');
+      likeBtn.disabled = true;
+      likeBtn.querySelector('.like-icon').textContent = '❤️';
+      const countEl = likeBtn.querySelector('.like-count');
       countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
       try {
         await db.collection('answers').doc(docId).update({
@@ -502,6 +515,22 @@ async function loadCommunityAnswers(workId){
         });
       } catch (e) {
         console.warn('failed to like', e);
+      }
+    };
+    const shareBtn = itemEl.querySelector('.share-mini-btn');
+    shareBtn.onclick = async () => {
+      const original = shareBtn.textContent;
+      shareBtn.disabled = true;
+      shareBtn.textContent = '作成中…';
+      try {
+        const work = WORKS.find(x => x.id === workId);
+        const canvas = await generateShareCard(work, a.text);
+        showShareCardModal(canvas, work);
+      } catch (err) {
+        console.warn('failed to generate share card for community answer', err);
+      } finally {
+        shareBtn.disabled = false;
+        shareBtn.textContent = original;
       }
     };
   });
