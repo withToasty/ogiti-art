@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>名画タイトル当て</title>
-<meta name="description" content="著作権の切れた名画を見て、タイトルを当ててみる一人用アプリ。答え合わせのあとに本当のタイトル・作者・背景を解説。全10問、判定・採点なし。">
+<meta name="description" content="著作権の切れた名画を見て、タイトルを当ててみる一人用アプリ。答え合わせのあとに本当のタイトル・作者・背景を解説。全15問、判定・採点なし。">
 <meta name="theme-color" content="#c8593a">
 
 <!-- Open Graph / SNSでのリンクシェア用（GitHub Pagesのドメインが確定したら og:url と og:image を実URLに差し替えてください） -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="名画タイトル当て">
 <meta property="og:title" content="名画タイトル当て">
-<meta property="og:description" content="著作権の切れた名画を見て、タイトルを当ててみる一人用アプリ。答え合わせのあとに本当のタイトル・作者・背景を解説。全10問。">
+<meta property="og:description" content="著作権の切れた名画を見て、タイトルを当ててみる一人用アプリ。答え合わせのあとに本当のタイトル・作者・背景を解説。全15問。">
 <meta property="og:url" content="https://withtoasty.github.io/ogiti-art/">
 <meta property="og:image" content="https://withtoasty.github.io/ogiti-art/images/og-image.jpg">
 <meta property="og:image:width" content="1200">
@@ -20,7 +20,7 @@
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="名画タイトル当て">
-<meta name="twitter:description" content="著作権の切れた名画を見て、タイトルを当ててみる一人用アプリ。全10問、判定・採点なし。">
+<meta name="twitter:description" content="著作権の切れた名画を見て、タイトルを当ててみる一人用アプリ。全15問、判定・採点なし。">
 <meta name="twitter:image" content="https://withtoasty.github.io/ogiti-art/images/og-image.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -620,6 +620,46 @@ const WORKS = [
     artist: "ウジェーヌ・ドラクロワ", year: "1830年",
     hint: "女性が旗を掲げているが、実在の人物か寓意像か",
     desc: "1830年のフランス七月革命を題材にした作品で、中央の女性は実在の人物ではなく「自由」を擬人化した寓意像。半裸で描かれているのは古典彫刻の伝統を踏襲した表現とされる。"
+  },
+  {
+    id: "american-gothic",
+    image: "images/american-gothic.jpg",
+    title: "アメリカン・ゴシック（American Gothic）",
+    artist: "グラント・ウッド", year: "1930年",
+    hint: "熊手を持つ男性と、その隣に立つ女性。表情はかたい",
+    desc: "アイオワ州の実在する農家風の家を見て着想を得た作品。モデルは画家の妹と、彼のかかりつけ歯科医で、実際の夫婦ではない。当初は保守的な田舎の風刺と受け取られ、地元アイオワの人々には怒りを買ったという逸話がある。"
+  },
+  {
+    id: "las-meninas",
+    image: "images/las-meninas.jpg",
+    title: "ラス・メニーナス（女官たち）",
+    artist: "ディエゴ・ベラスケス", year: "1656年",
+    hint: "画家自身がキャンバスの前に立ち、誰かをじっと見つめている",
+    desc: "描かれているのは幼い王女とその侍女たちだが、奥の鏡には国王夫妻が映り込んでおり、画家が実際に描いているのはその二人だと考えられている。見る者自身が国王夫妻の視点に立たされる、仕掛けに満ちた構図。"
+  },
+  {
+    id: "whistlers-mother",
+    image: "images/whistlers-mother.jpg",
+    title: "灰色と黒のアレンジメント第1番（画家の母の肖像）",
+    artist: "ジェームズ・マクニール・ホイッスラー", year: "1871年",
+    hint: "横向きに椅子に座る、黒い服の年配の女性",
+    desc: "画家本人は「誰の母親か」よりも色と形の構成そのものを重視しており、正式なタイトルは「アレンジメント」（配色の意）。モデルの体調が悪く座り続けられなかったため、当初の立像案から急遽この構図に変更されたと言われる。"
+  },
+  {
+    id: "night-watch",
+    image: "images/night-watch.jpg",
+    title: "夜警",
+    artist: "レンブラント・ファン・レイン", year: "1642年",
+    hint: "武装した一団が今まさに動き出そうとしている、大人数の集団肖像",
+    desc: "実は「夜」の場面ではなく昼間の出動シーン。ニス層が経年で黒ずんだせいで「夜警」と呼ばれるようになった。集団肖像画としては型破りに全員が同じ大きさ・同じ光で描かれておらず、一部の出資者から不満が出たとも言われる。"
+  },
+  {
+    id: "grande-jatte",
+    image: "images/grande-jatte.jpg",
+    title: "グランド・ジャット島の日曜日の午後",
+    artist: "ジョルジュ・スーラ", year: "1884–86年",
+    hint: "点だけで描かれた、公園でくつろぐ大勢の人々",
+    desc: "絵の具を混ぜずに無数の色の点を並べ、見る人の目の中で色が混ざって見えるようにする「点描（新印象主義）」の代表作。完成までに2年、数百枚のスケッチを要したとされる、緻密な計算の上に成り立つ作品。"
   }
 ];
 
