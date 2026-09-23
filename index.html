@@ -118,9 +118,12 @@
     justify-content:center; font-size:13px; font-weight:700;
   }
   .pick-caption{
-    padding:8px 10px 10px; font-size:12px; color:var(--sub); line-height:1.5;
+    padding:8px 10px 2px; font-size:12px; color:var(--sub); line-height:1.5;
   }
   .pick-card.done .pick-caption{color:var(--ink); font-weight:600;}
+  .pick-count{
+    display:block; padding:2px 10px 10px; font-size:11px; color:var(--sub); opacity:.8;
+  }
   .back-link{
     align-self:flex-start; padding:8px 2px; font-size:13px; background:transparent;
     color:var(--sub); border:none;
@@ -453,6 +456,20 @@ async function fetchCommunityAnswers(workId){
   }
 }
 
+async function fetchAnswerCounts(){
+  if (!db) return {};
+  try {
+    const entries = await Promise.all(WORKS.map(async w => {
+      const snap = await db.collection('answers').where('workId', '==', w.id).count().get();
+      return [w.id, snap.data().count];
+    }));
+    return Object.fromEntries(entries);
+  } catch (e) {
+    console.warn('failed to fetch answer counts', e);
+    return {};
+  }
+}
+
 async function loadCommunityAnswers(workId){
   const listEl = document.getElementById('communityList');
   if (!listEl) return;
@@ -631,6 +648,7 @@ function renderPicker(){
           ${done ? '<span class="pick-done-badge">✓</span>' : ''}
         </span>
         <span class="pick-caption">${done ? escapeHtml(answers[w.id]) : w.hint}</span>
+        ${db ? `<span class="pick-count" id="count-${w.id}"></span>` : ''}
       </button>
     `;
   }).join('');
@@ -655,6 +673,15 @@ function renderPicker(){
   });
   const resultBtn = document.getElementById('resultBtn');
   if (resultBtn) resultBtn.onclick = renderResult;
+
+  if (db) {
+    fetchAnswerCounts().then(counts => {
+      for (const w of WORKS) {
+        const el = document.getElementById(`count-${w.id}`);
+        if (el) el.textContent = `${counts[w.id] || 0}件の回答`;
+      }
+    });
+  }
 }
 
 function renderQuestion(w, opts = {}){
