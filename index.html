@@ -156,6 +156,19 @@
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
   .optin input{accent-color:var(--accent);}
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,17,14,.6);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px; z-index:1000;
+  }
+  .modal-card{
+    background:var(--card); border-radius:16px; padding:16px;
+    max-width:420px; width:100%; display:flex; flex-direction:column; gap:12px;
+    box-shadow:var(--shadow); max-height:90vh; overflow:auto;
+  }
+  .modal-preview{width:100%; border-radius:10px; display:block;}
+  .modal-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .modal-actions button{flex:1; min-width:100px; padding:12px 8px; font-size:13px;}
   .hidden{display:none;}
   footer{font-size:11px; color:var(--sub); text-align:center; padding:8px 0 4px; line-height:1.6;}
   .start-hero{font-size:44px; text-align:center; margin:12px 0;}
@@ -201,6 +214,168 @@ try {
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---- シェア画像（美術館の解説プレート風）の生成 ----
+const SHARE_CARD_W = 1080, SHARE_CARD_H = 1350;
+
+function wrapCanvasText(ctx, text, maxWidth){
+  const lines = [];
+  let line = '';
+  for (const ch of text) {
+    const test = line + ch;
+    if (line && ctx.measureText(test).width > maxWidth) {
+      lines.push(line);
+      line = ch;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function fitGuessText(ctx, text, maxWidth, maxLines){
+  const sizes = [56, 48, 40, 34];
+  for (const size of sizes) {
+    ctx.font = `700 ${size}px "Shippori Mincho", serif`;
+    const lines = wrapCanvasText(ctx, text, maxWidth);
+    if (lines.length <= maxLines) return { size, lines };
+  }
+  const size = sizes[sizes.length - 1];
+  ctx.font = `700 ${size}px "Shippori Mincho", serif`;
+  const lines = wrapCanvasText(ctx, text, maxWidth).slice(0, maxLines);
+  let last = lines[maxLines - 1] || '';
+  while (last.length > 0 && ctx.measureText(last + '…').width > maxWidth) {
+    last = last.slice(0, -1);
+  }
+  lines[maxLines - 1] = last + '…';
+  return { size, lines };
+}
+
+function loadImageEl(src){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function generateShareCard(w, guessText){
+  const W = SHARE_CARD_W, H = SHARE_CARD_H;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // 共有画像はサイトのテーマに関わらず常にライト配色で書き出す
+  const cardBg = '#f7f3ec', ink = '#2b2620', sub = '#7a7267', accent = '#c8593a';
+
+  ctx.fillStyle = cardBg;
+  ctx.fillRect(0, 0, W, H);
+
+  const imgAreaH = Math.round(H * 0.63);
+
+  try {
+    await Promise.all([
+      document.fonts.load('700 56px "Shippori Mincho"'),
+      document.fonts.load('400 32px "Noto Sans JP"'),
+    ]);
+  } catch {}
+
+  if (w.image) {
+    try {
+      const img = await loadImageEl(w.image);
+      const scale = Math.max(W / img.width, imgAreaH / img.height);
+      const dw = img.width * scale, dh = img.height * scale;
+      const dx = (W - dw) / 2, dy = (imgAreaH - dh) / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, W, imgAreaH);
+      ctx.clip();
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+    } catch (e) {
+      console.warn('failed to load image for share card', e);
+    }
+  }
+
+  const padX = 64;
+  let y = imgAreaH + 70;
+
+  ctx.fillStyle = accent;
+  ctx.fillRect(padX, y, 64, 6);
+  y += 46;
+
+  const { size, lines } = fitGuessText(ctx, `「${guessText}」`, W - padX * 2, 3);
+  ctx.fillStyle = ink;
+  ctx.textBaseline = 'alphabetic';
+  const lineHeight = Math.round(size * 1.28);
+  for (const line of lines) {
+    y += lineHeight;
+    ctx.font = `700 ${size}px "Shippori Mincho", serif`;
+    ctx.fillText(line, padX, y);
+  }
+  y += 44;
+
+  ctx.font = '400 30px "Noto Sans JP", sans-serif';
+  ctx.fillStyle = sub;
+  ctx.fillText(`正解：${w.title}`, padX, y);
+  y += 42;
+  ctx.font = '400 26px "Noto Sans JP", sans-serif';
+  ctx.fillText(`${w.artist} ／ ${w.year}`, padX, y);
+
+  ctx.font = '400 22px "Noto Sans JP", sans-serif';
+  ctx.fillStyle = sub;
+  ctx.fillText('名画タイトル当て — withtoasty.github.io/ogiti-art', padX, H - 44);
+
+  return canvas;
+}
+
+function showShareCardModal(canvas, work){
+  const dataUrl = canvas.toDataURL('image/png');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <img class="modal-preview" src="${dataUrl}" alt="シェア画像プレビュー">
+      <div class="modal-actions">
+        <button class="primary" id="modalShareBtn">シェアする</button>
+        <button class="ghost" id="modalDownloadBtn">保存する</button>
+        <button class="ghost" id="modalCloseBtn">閉じる</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector('#modalCloseBtn').onclick = close;
+
+  overlay.querySelector('#modalDownloadBtn').onclick = () => {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `ogiti-art-${work.id}.png`;
+    a.click();
+  };
+
+  const shareBtn = overlay.querySelector('#modalShareBtn');
+  if (!navigator.share) {
+    shareBtn.remove();
+  } else {
+    shareBtn.onclick = async () => {
+      try {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], `ogiti-art-${work.id}.png`, { type: 'image/png' });
+        if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+          throw new Error('cannot share files on this device');
+        }
+        await navigator.share({ files: [file], text: '名画タイトル当て、あなたも遊んでみて', url: location.href });
+      } catch (e) {
+        console.warn('share failed', e);
+      }
+    };
+  }
 }
 
 function hasLiked(docId){
@@ -457,6 +632,7 @@ function renderAnswer(){
         <div class="meta">${w.artist} ／ ${w.year}</div>
         <div class="desc">${w.desc}</div>
       </div>
+      <button class="ghost" id="shareCardBtn" type="button">画像でシェアする</button>
       ${db ? `<div class="community"><div class="community-title">みんなの回答</div><div class="community-list" id="communityList">読み込み中…</div></div>` : ''}
       <button class="primary" id="nextBtn">${isLast ? '結果を見る' : '次の絵へ'}</button>
     </div>
@@ -465,6 +641,21 @@ function renderAnswer(){
   if (db) loadCommunityAnswers(w.id);
   document.getElementById('nextBtn').onclick = () => {
     if(isLast){ renderResult(); } else { idx++; renderQuestion(); }
+  };
+  document.getElementById('shareCardBtn').onclick = async (e) => {
+    const btn = e.currentTarget;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '作成中…';
+    try {
+      const canvas = await generateShareCard(w, guesses[idx]);
+      showShareCardModal(canvas, w);
+    } catch (err) {
+      console.warn('failed to generate share card', err);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   };
 }
 
