@@ -99,6 +99,32 @@
     box-shadow:var(--shadow);
   }
   .hero-banner img{width:100%; height:100%; object-fit:cover; display:block;}
+  .pick-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:10px;}
+  .pick-card{
+    display:flex; flex-direction:column; gap:0; padding:0; margin:0; border:none;
+    background:var(--card); border-radius:14px; overflow:hidden; cursor:pointer;
+    box-shadow:var(--shadow); text-align:left; font-family:inherit;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .pick-thumb{
+    position:relative; width:100%; aspect-ratio:4/3; overflow:hidden;
+    background:linear-gradient(135deg,#d8cdb8,#b7a98d);
+  }
+  .pick-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .pick-card.done .pick-thumb img{filter:grayscale(.2) brightness(.88);}
+  .pick-done-badge{
+    position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:999px;
+    background:var(--accent); color:var(--accent-ink); display:flex; align-items:center;
+    justify-content:center; font-size:13px; font-weight:700;
+  }
+  .pick-caption{
+    padding:8px 10px 10px; font-size:12px; color:var(--sub); line-height:1.5;
+  }
+  .pick-card.done .pick-caption{color:var(--ink); font-weight:600;}
+  .back-link{
+    align-self:flex-start; padding:8px 2px; font-size:13px; background:transparent;
+    color:var(--sub); border:none;
+  }
   input[type=text]{
     width:100%; padding:14px; border-radius:10px; border:1px solid var(--line);
     background:var(--bg); color:var(--ink); font-size:16px;
@@ -551,9 +577,12 @@ const WORKS = [
   }
 ];
 
-let idx = 0;
-let guesses = [];
+let answers = {}; // workId -> 回答テキスト（回答済みかどうかもこれで判定する）
 const app = document.getElementById('app');
+
+function answeredCount(){
+  return WORKS.filter(w => answers[w.id] !== undefined).length;
+}
 
 function renderFrame(container, w){
   container.innerHTML = '';
@@ -575,88 +604,71 @@ function renderFrame(container, w){
   }
 }
 
-function renderSharedIntro(w){
-  app.innerHTML = `
-    <div class="hero-banner">
-      <img src="images/hero-banner.jpg" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
-    </div>
-    <h1>友達からのお題</h1>
-    <p class="lead">この名画、あなたならどんなタイトルをつける？答え合わせのあとに本当のタイトルも分かります。</p>
-    <div class="card">
-      <div class="frame" id="frame"></div>
-      <input type="text" id="guessInput" placeholder="この絵のタイトル、何？" autocomplete="off" maxlength="${MAX_ANSWER_LEN}">
-      ${db ? `
-        <label class="optin">
-          <input type="checkbox" id="shareOptIn" ${shareOptIn ? 'checked' : ''}>
-          この回答を「みんなの回答」に公開する
-        </label>
-      ` : ''}
-      <button class="primary" id="revealBtn">答え合わせ</button>
-    </div>
-  `;
-  renderFrame(document.getElementById('frame'), w);
-  if (db) {
-    document.getElementById('shareOptIn').onchange = (e) => {
-      shareOptIn = e.target.checked;
-      try { localStorage.setItem('shareOptIn', shareOptIn ? '1' : '0'); } catch {}
-    };
-  }
-  document.getElementById('revealBtn').onclick = () => {
-    const raw = document.getElementById('guessInput').value.trim();
-    const val = raw || "（未回答）";
-    if (raw && shareOptIn) submitCommunityAnswer(w.id, raw);
-    renderSharedAnswer(w, val);
-  };
-  document.getElementById('guessInput').addEventListener('keydown', e=>{
-    if(e.key === 'Enter'){ document.getElementById('revealBtn').click(); }
-  });
-}
-
-function renderSharedAnswer(w, guessVal){
-  app.innerHTML = `
-    <div class="card">
-      <div class="frame" id="frame"></div>
-      <div class="your-guess">あなたの回答：${guessVal}</div>
-      <div class="answer-box">
-        <div class="real-title">正解：${w.title}</div>
-        <div class="meta">${w.artist} ／ ${w.year}</div>
-        <div class="desc">${w.desc}</div>
-      </div>
-      ${db ? `<div class="community"><div class="community-title">みんなの回答</div><div class="community-list" id="communityList">読み込み中…</div></div>` : ''}
-      <button class="primary" id="playAllBtn">全10問に挑戦する</button>
-    </div>
-  `;
-  renderFrame(document.getElementById('frame'), w);
-  if (db) loadCommunityAnswers(w.id);
-  document.getElementById('playAllBtn').onclick = () => {
-    try { history.replaceState(null, '', location.pathname); } catch {}
-    idx = 0; guesses = [];
-    renderQuestion();
-  };
-}
-
 function renderStart(){
   app.innerHTML = `
     <div class="hero-banner">
       <img src="images/hero-banner.jpg" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
     </div>
     <h1>名画タイトル当て</h1>
-    <p class="lead">著作権の切れた名画を見て、タイトルを当ててみてください。答え合わせのあとに本当の背景も解説します。全${WORKS.length}問。</p>
+    <p class="lead">著作権の切れた名画を見て、タイトルを当ててみてください。答え合わせのあとに本当の背景も解説します。好きな作品から自由に、全${WORKS.length}問。</p>
     <div class="card">
-      <button class="primary" id="startBtn">はじめる</button>
+      <button class="primary" id="startBtn">作品をえらぶ</button>
     </div>
     <footer>画像出典：パブリックドメイン作品（Wikimedia Commons）</footer>
   `;
-  document.getElementById('startBtn').onclick = () => { idx = 0; guesses = []; renderQuestion(); };
+  document.getElementById('startBtn').onclick = renderPicker;
 }
 
-function renderQuestion(){
-  const w = WORKS[idx];
+function renderPicker(){
+  const count = answeredCount();
+  const allDone = count === WORKS.length;
+  const cards = WORKS.map(w => {
+    const done = answers[w.id] !== undefined;
+    return `
+      <button class="pick-card${done ? ' done' : ''}" data-id="${w.id}" type="button">
+        <span class="pick-thumb">
+          ${w.image ? `<img src="${w.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+          ${done ? '<span class="pick-done-badge">✓</span>' : ''}
+        </span>
+        <span class="pick-caption">${done ? escapeHtml(answers[w.id]) : w.hint}</span>
+      </button>
+    `;
+  }).join('');
+
   app.innerHTML = `
     <div class="progress">
-      <div class="progress-label">問題 ${idx+1} / ${WORKS.length}</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${((idx+1)/WORKS.length)*100}%"></div></div>
+      <div class="progress-label">${count} / ${WORKS.length} 回答済み・好きな作品から選べます</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${(count/WORKS.length)*100}%"></div></div>
     </div>
+    <div class="pick-grid">${cards}</div>
+    ${count > 0 ? `<button class="primary" id="resultBtn">${allDone ? '結果を見る' : `ここまでの回答を見る（${count}問）`}</button>` : ''}
+  `;
+  document.querySelectorAll('.pick-card').forEach(btn => {
+    btn.onclick = () => {
+      const w = WORKS.find(x => x.id === btn.dataset.id);
+      if (answers[w.id] !== undefined) {
+        renderAnswerView(w);
+      } else {
+        renderQuestion(w);
+      }
+    };
+  });
+  const resultBtn = document.getElementById('resultBtn');
+  if (resultBtn) resultBtn.onclick = renderResult;
+}
+
+function renderQuestion(w, opts = {}){
+  const fromShare = !!opts.fromShare;
+  app.innerHTML = `
+    ${fromShare ? `
+      <div class="hero-banner">
+        <img src="images/hero-banner.jpg" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+      </div>
+      <h1>友達からのお題</h1>
+      <p class="lead">この名画、あなたならどんなタイトルをつける？答え合わせのあとに本当のタイトルも分かります。</p>
+    ` : `
+      <button class="ghost back-link" id="backToPickerBtn" type="button">← 作品一覧へ</button>
+    `}
     <div class="card">
       <div class="frame" id="frame"></div>
       <input type="text" id="guessInput" placeholder="この絵のタイトル、何？" autocomplete="off" maxlength="${MAX_ANSWER_LEN}">
@@ -676,29 +688,29 @@ function renderQuestion(){
       try { localStorage.setItem('shareOptIn', shareOptIn ? '1' : '0'); } catch {}
     };
   }
-  document.getElementById('revealBtn').onclick = () => {
+  const backBtn = document.getElementById('backToPickerBtn');
+  if (backBtn) backBtn.onclick = renderPicker;
+  const submit = () => {
     const raw = document.getElementById('guessInput').value.trim();
     const val = raw || "（未回答）";
-    guesses.push(val);
+    answers[w.id] = val;
     if (raw && shareOptIn) submitCommunityAnswer(w.id, raw);
-    renderAnswer();
+    renderAnswerView(w, { fromShare });
   };
+  document.getElementById('revealBtn').onclick = submit;
   document.getElementById('guessInput').addEventListener('keydown', e=>{
-    if(e.key === 'Enter'){ document.getElementById('revealBtn').click(); }
+    if(e.key === 'Enter'){ submit(); }
   });
 }
 
-function renderAnswer(){
-  const w = WORKS[idx];
-  const isLast = idx === WORKS.length - 1;
+function renderAnswerView(w, opts = {}){
+  const fromShare = !!opts.fromShare;
+  const allDone = answeredCount() === WORKS.length;
+  const nextLabel = fromShare ? '作品一覧を見る' : (allDone ? '結果を見る' : '作品一覧へ戻る');
   app.innerHTML = `
-    <div class="progress">
-      <div class="progress-label">問題 ${idx+1} / ${WORKS.length}</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${((idx+1)/WORKS.length)*100}%"></div></div>
-    </div>
     <div class="card">
       <div class="frame" id="frame"></div>
-      <div class="your-guess">あなたの回答：${guesses[idx]}</div>
+      <div class="your-guess">あなたの回答：${answers[w.id]}</div>
       <div class="answer-box">
         <div class="real-title">正解：${w.title}</div>
         <div class="meta">${w.artist} ／ ${w.year}</div>
@@ -706,13 +718,20 @@ function renderAnswer(){
       </div>
       <button class="ghost" id="shareCardBtn" type="button">画像でシェアする</button>
       ${db ? `<div class="community"><div class="community-title">みんなの回答</div><div class="community-list" id="communityList">読み込み中…</div></div>` : ''}
-      <button class="primary" id="nextBtn">${isLast ? '結果を見る' : '次の絵へ'}</button>
+      <button class="primary" id="nextBtn">${nextLabel}</button>
     </div>
   `;
   renderFrame(document.getElementById('frame'), w);
   if (db) loadCommunityAnswers(w.id);
   document.getElementById('nextBtn').onclick = () => {
-    if(isLast){ renderResult(); } else { idx++; renderQuestion(); }
+    if (fromShare) {
+      try { history.replaceState(null, '', location.pathname); } catch {}
+      renderPicker();
+    } else if (allDone) {
+      renderResult();
+    } else {
+      renderPicker();
+    }
   };
   document.getElementById('shareCardBtn').onclick = async (e) => {
     const btn = e.currentTarget;
@@ -720,7 +739,7 @@ function renderAnswer(){
     btn.disabled = true;
     btn.textContent = '作成中…';
     try {
-      const canvas = await generateShareCard(w, guesses[idx]);
+      const canvas = await generateShareCard(w, answers[w.id]);
       showShareCardModal(canvas, w);
     } catch (err) {
       console.warn('failed to generate share card', err);
@@ -732,22 +751,22 @@ function renderAnswer(){
 }
 
 function renderResult(){
-  const rows = WORKS.map((w,i)=>`
+  const rows = WORKS.map(w => `
     <div class="row" style="justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px solid var(--line);">
       <span style="color:var(--sub)">${w.title}</span>
-      <span>${guesses[i]}</span>
+      <span>${answers[w.id] !== undefined ? answers[w.id] : '未回答'}</span>
     </div>
   `).join('');
 
   const shareText = "名画のタイトルを当ててみた。真面目にいくつもりが、後半は大喜利になった。";
-  const shareUrl = location.href;
+  const shareUrl = location.origin + location.pathname;
   const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
   const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(shareText + '\n' + shareUrl)}`;
 
   app.innerHTML = `
     <div class="start-hero">🎉</div>
     <h1>おつかれさまでした</h1>
-    <p class="lead">全${WORKS.length}問、回答一覧です。</p>
+    <p class="lead">${answeredCount()} / ${WORKS.length}問、回答一覧です。</p>
     <div class="card">
       ${rows}
       <div class="share-row">
@@ -755,10 +774,12 @@ function renderResult(){
         <a class="share-btn share-line" href="${lineShareUrl}" target="_blank" rel="noopener">LINEでシェア</a>
         <button class="share-btn share-copy" id="copyLinkBtn" type="button">リンクをコピー</button>
       </div>
-      <button class="primary" id="restartBtn">もう一度あそぶ</button>
+      <button class="ghost" id="backToPickerBtn2" type="button">作品一覧に戻る</button>
+      <button class="primary" id="restartBtn">最初からやり直す</button>
     </div>
   `;
-  document.getElementById('restartBtn').onclick = renderStart;
+  document.getElementById('backToPickerBtn2').onclick = renderPicker;
+  document.getElementById('restartBtn').onclick = () => { answers = {}; renderStart(); };
   document.getElementById('copyLinkBtn').onclick = async (e) => {
     const btn = e.currentTarget;
     try {
@@ -775,7 +796,7 @@ function renderResult(){
   const sharedWorkId = new URLSearchParams(location.search).get('w');
   const sharedWork = WORKS.find(w => w.id === sharedWorkId);
   if (sharedWork) {
-    renderSharedIntro(sharedWork);
+    renderQuestion(sharedWork, { fromShare: true });
   } else {
     renderStart();
   }
