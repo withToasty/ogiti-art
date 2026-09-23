@@ -94,11 +94,11 @@
   .frame img{width:100%; height:100%; object-fit:cover; display:block;}
   .frame .ph{padding:0 12px;}
   .frame .ph b{display:block; font-size:22px; margin-bottom:6px;}
-  .hero-strip{display:flex; gap:6px;}
-  .hero-strip img{
-    flex:1; min-width:0; aspect-ratio:1; object-fit:cover; border-radius:10px;
+  .hero-banner{
+    width:100%; aspect-ratio:1200/630; border-radius:14px; overflow:hidden;
     box-shadow:var(--shadow);
   }
+  .hero-banner img{width:100%; height:100%; object-fit:cover; display:block;}
   input[type=text]{
     width:100%; padding:14px; border-radius:10px; border:1px solid var(--line);
     background:var(--bg); color:var(--ink); font-size:16px;
@@ -562,11 +562,8 @@ function renderFrame(container, w){
 
 function renderStart(){
   app.innerHTML = `
-    <div class="hero-strip">
-      <img src="images/angelus.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-      <img src="images/scream.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-      <img src="images/pearl-earring.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-      <img src="images/great-wave.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+    <div class="hero-banner">
+      <img src="images/hero-banner.jpg" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
     </div>
     <h1>名画タイトル当て</h1>
     <p class="lead">著作権の切れた名画を見て、タイトルを当ててみてください。答え合わせのあとに本当の背景も解説します。全${WORKS.length}問。</p>
