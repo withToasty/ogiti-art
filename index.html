@@ -334,6 +334,9 @@ async function generateShareCard(w, guessText){
 
 function showShareCardModal(canvas, work){
   const dataUrl = canvas.toDataURL('image/png');
+  const deepLink = `${location.origin}${location.pathname}?w=${encodeURIComponent(work.id)}`;
+  const shareText = `この名画、あなたならどんなタイトルをつける？`;
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -342,6 +345,7 @@ function showShareCardModal(canvas, work){
       <div class="modal-actions">
         <button class="primary" id="modalShareBtn">シェアする</button>
         <button class="ghost" id="modalDownloadBtn">保存する</button>
+        <button class="ghost" id="modalCopyBtn">お題のリンクをコピー</button>
         <button class="ghost" id="modalCloseBtn">閉じる</button>
       </div>
     </div>
@@ -359,6 +363,17 @@ function showShareCardModal(canvas, work){
     a.click();
   };
 
+  overlay.querySelector('#modalCopyBtn').onclick = async (e) => {
+    const btn = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(deepLink);
+      btn.textContent = 'コピーしました';
+    } catch {
+      btn.textContent = 'コピーできませんでした';
+    }
+    setTimeout(() => { btn.textContent = 'お題のリンクをコピー'; }, 2000);
+  };
+
   const shareBtn = overlay.querySelector('#modalShareBtn');
   if (!navigator.share) {
     shareBtn.remove();
@@ -370,7 +385,7 @@ function showShareCardModal(canvas, work){
         if (navigator.canShare && !navigator.canShare({ files: [file] })) {
           throw new Error('cannot share files on this device');
         }
-        await navigator.share({ files: [file], text: '名画タイトル当て、あなたも遊んでみて', url: location.href });
+        await navigator.share({ files: [file], text: shareText, url: deepLink });
       } catch (e) {
         console.warn('share failed', e);
       }
@@ -560,6 +575,66 @@ function renderFrame(container, w){
   }
 }
 
+function renderSharedIntro(w){
+  app.innerHTML = `
+    <div class="hero-banner">
+      <img src="images/hero-banner.jpg" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+    </div>
+    <h1>友達からのお題</h1>
+    <p class="lead">この名画、あなたならどんなタイトルをつける？答え合わせのあとに本当のタイトルも分かります。</p>
+    <div class="card">
+      <div class="frame" id="frame"></div>
+      <input type="text" id="guessInput" placeholder="この絵のタイトル、何？" autocomplete="off" maxlength="${MAX_ANSWER_LEN}">
+      ${db ? `
+        <label class="optin">
+          <input type="checkbox" id="shareOptIn" ${shareOptIn ? 'checked' : ''}>
+          この回答を「みんなの回答」に公開する
+        </label>
+      ` : ''}
+      <button class="primary" id="revealBtn">答え合わせ</button>
+    </div>
+  `;
+  renderFrame(document.getElementById('frame'), w);
+  if (db) {
+    document.getElementById('shareOptIn').onchange = (e) => {
+      shareOptIn = e.target.checked;
+      try { localStorage.setItem('shareOptIn', shareOptIn ? '1' : '0'); } catch {}
+    };
+  }
+  document.getElementById('revealBtn').onclick = () => {
+    const raw = document.getElementById('guessInput').value.trim();
+    const val = raw || "（未回答）";
+    if (raw && shareOptIn) submitCommunityAnswer(w.id, raw);
+    renderSharedAnswer(w, val);
+  };
+  document.getElementById('guessInput').addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ document.getElementById('revealBtn').click(); }
+  });
+}
+
+function renderSharedAnswer(w, guessVal){
+  app.innerHTML = `
+    <div class="card">
+      <div class="frame" id="frame"></div>
+      <div class="your-guess">あなたの回答：${guessVal}</div>
+      <div class="answer-box">
+        <div class="real-title">正解：${w.title}</div>
+        <div class="meta">${w.artist} ／ ${w.year}</div>
+        <div class="desc">${w.desc}</div>
+      </div>
+      ${db ? `<div class="community"><div class="community-title">みんなの回答</div><div class="community-list" id="communityList">読み込み中…</div></div>` : ''}
+      <button class="primary" id="playAllBtn">全10問に挑戦する</button>
+    </div>
+  `;
+  renderFrame(document.getElementById('frame'), w);
+  if (db) loadCommunityAnswers(w.id);
+  document.getElementById('playAllBtn').onclick = () => {
+    try { history.replaceState(null, '', location.pathname); } catch {}
+    idx = 0; guesses = [];
+    renderQuestion();
+  };
+}
+
 function renderStart(){
   app.innerHTML = `
     <div class="hero-banner">
@@ -696,7 +771,15 @@ function renderResult(){
   };
 }
 
-renderStart();
+(function init(){
+  const sharedWorkId = new URLSearchParams(location.search).get('w');
+  const sharedWork = WORKS.find(w => w.id === sharedWorkId);
+  if (sharedWork) {
+    renderSharedIntro(sharedWork);
+  } else {
+    renderStart();
+  }
+})();
 </script>
 </body>
 </html>
