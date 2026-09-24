@@ -64,3 +64,25 @@
 - License: Public domain — Public domain
 - Artist metadata: Henry Fuseli
 - Credit: This file was derived from:  John Henry Fuseli - The Nightmare.JPG:
+
+### las-meninas
+- File: File:Las Meninas 01.jpg
+- Source: https://commons.wikimedia.org/wiki/File%3ALas%20Meninas%2001.jpg
+- License: Public domain — Public domain
+- Artist metadata: Diego Velázquez
+- Credit: Galería online, Museo del Prado.
+
+### night-watch
+- File: File:The Nightwatch by Rembrandt - Rijksmuseum.jpg
+- Source: https://commons.wikimedia.org/wiki/File%3AThe%20Nightwatch%20by%20Rembrandt%20-%20Rijksmuseum.jpg
+- License: Public domain — Public domain
+- Artist metadata: Rembrandt
+- Credit: http://hdl.handle.net/10934/RM0001.COLLECT.5216
+
+
+### grande-jatte
+- File: File:Georges Seurat - Un dimanche après-midi à l'île de la Grande Jatte.jpg
+- Source: https://commons.wikimedia.org/wiki/File%3AGeorges%20Seurat%20-%20Un%20dimanche%20apr%C3%A8s-midi%20%C3%A0%20l'%C3%AEle%20de%20la%20Grande%20Jatte.jpg
+- License: Public domain — Public domain
+- Artist metadata: Georges Seurat
+- Credit: 1. cgfa.sunsite.dk2. Art Institute of Chicago:  online database:  entry  27992
