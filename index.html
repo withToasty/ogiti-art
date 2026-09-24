@@ -166,6 +166,12 @@
     padding:8px 10px;
   }
   .community-text{font-size:14px; word-break:break-word;}
+  .community-item.mine{box-shadow: inset 0 0 0 1px var(--accent);}
+  .mine-badge{
+    display:inline-block; margin-left:6px; font-size:10px; font-weight:700;
+    color:var(--accent); border:1px solid var(--accent); border-radius:999px;
+    padding:1px 6px; vertical-align:middle;
+  }
   .community-actions{flex-shrink:0; display:flex; gap:6px; margin-left:auto;}
   .like-btn{
     flex-shrink:0; display:flex; align-items:center; gap:4px;
@@ -436,18 +442,26 @@ function hasLiked(docId){
 function markLiked(docId){
   try { localStorage.setItem('liked_' + docId, '1'); } catch {}
 }
+function isMine(docId){
+  try { return localStorage.getItem('mine_' + docId) === '1'; } catch { return false; }
+}
+function markMine(docId){
+  try { localStorage.setItem('mine_' + docId, '1'); } catch {}
+}
 
 async function submitCommunityAnswer(workId, text){
-  if (!db || !text) return;
+  if (!db || !text) return null;
   try {
-    await db.collection('answers').add({
+    const ref = await db.collection('answers').add({
       workId,
       text: text.slice(0, MAX_ANSWER_LEN),
       likes: 0,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    return ref.id;
   } catch (e) {
     console.warn('failed to submit community answer', e);
+    return null;
   }
 }
 
@@ -487,8 +501,8 @@ async function loadCommunityAnswers(workId){
     return;
   }
   listEl.innerHTML = communityAnswers.map(a => `
-    <div class="community-item">
-      <span class="community-text">${escapeHtml(a.text)}</span>
+    <div class="community-item${isMine(a.id) ? ' mine' : ''}">
+      <span class="community-text">${escapeHtml(a.text)}${isMine(a.id) ? '<span class="mine-badge">あなた</span>' : ''}</span>
       <span class="community-actions">
         <button class="like-btn" data-id="${a.id}" ${hasLiked(a.id) ? 'disabled' : ''}>
           <span class="like-icon">${hasLiked(a.id) ? '❤️' : '🤍'}</span>
@@ -663,7 +677,17 @@ const WORKS = [
   }
 ];
 
-let answers = {}; // workId -> 回答テキスト（回答済みかどうかもこれで判定する）
+function loadAnswers(){
+  try {
+    const raw = localStorage.getItem('answers');
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveAnswers(){
+  try { localStorage.setItem('answers', JSON.stringify(answers)); } catch {}
+}
+
+let answers = loadAnswers(); // workId -> 回答テキスト（回答済みかどうかもこれで判定する）。localStorageに永続化
 const app = document.getElementById('app');
 
 function answeredCount(){
@@ -790,7 +814,10 @@ function renderQuestion(w, opts = {}){
     const raw = document.getElementById('guessInput').value.trim();
     const val = raw || "（未回答）";
     answers[w.id] = val;
-    if (raw && shareOptIn) submitCommunityAnswer(w.id, raw);
+    saveAnswers();
+    if (raw && shareOptIn) {
+      submitCommunityAnswer(w.id, raw).then(id => { if (id) markMine(id); });
+    }
     renderAnswerView(w, { fromShare });
   };
   document.getElementById('revealBtn').onclick = submit;
@@ -875,7 +902,7 @@ function renderResult(){
     </div>
   `;
   document.getElementById('backToPickerBtn2').onclick = renderPicker;
-  document.getElementById('restartBtn').onclick = () => { answers = {}; renderStart(); };
+  document.getElementById('restartBtn').onclick = () => { answers = {}; saveAnswers(); renderStart(); };
   document.getElementById('copyLinkBtn').onclick = async (e) => {
     const btn = e.currentTarget;
     try {
