@@ -90,6 +90,36 @@ SNSでリンクをシェアした際に `images/og-image.jpg` がプレビュー
 - Firestoreの無料枠（1日あたり読み取り5万・書き込み2万）を超えると課金が発生する可能性がある。個人の
   ちょっとしたアクセス数であれば通常は無料枠内に収まる
 
+## アクセス解析（GoatCounter）
+
+訪問数や「どこで離脱しているか」「シェア経由の人がどれだけ回答しているか」を測るために、
+[GoatCounter](https://www.goatcounter.com/)（無料・Cookie不要・個人を特定しない解析サービス）に対応している。
+
+**未設定でも動作する**：`index.html` 内の `GOATCOUNTER_CODE` が `"YOUR_CODE"` のままなら何も送信しない。
+
+### 有効化する手順
+
+1. https://www.goatcounter.com/signup でアカウントを作成（個人・非商用なら無料）。
+   「Code」欄に入れた文字列（例: `ogiti-art`）がダッシュボードのURL `https://ogiti-art.goatcounter.com` になる
+2. `index.html` の `const GOATCOUNTER_CODE = "YOUR_CODE";` をそのコードに書き換えてpush
+3. 公開ページを開いて、数分後にダッシュボードに記録されていれば完了（`localhost` や `file://` からのアクセスは記録されない）
+
+### 記録される項目
+
+| パス | 種類 | 意味 |
+|---|---|---|
+| `/` | ページビュー | 通常のトップ訪問 |
+| `share-landing/<作品ID>` | ページビュー | 共有リンク（`?w=`）から来た訪問 |
+| `start` | イベント | 「作品をえらぶ」を押した |
+| `answer/<作品ID>` | イベント | 答え合わせをした |
+| `share-landing-answer/<作品ID>` | イベント | 共有リンクから来た人が回答した |
+| `all-done` | イベント | 全問回答した |
+| `share-card-open/<作品ID>` | イベント | シェア画像を作った |
+| `share-card-native/<作品ID>` / `share-card-save/<作品ID>` / `share-card-copy/<作品ID>` | イベント | シェア画像を共有／保存／お題リンクをコピー |
+| `result-share-x` / `result-share-line` / `result-share-copy` | イベント | 結果画面のシェアボタン |
+
+たとえば `share-landing/*` に対する `share-landing-answer/*` の割合で「シェアされたお題がどれだけ遊ばれているか」がわかる。
+
 ## 技術方針
 
 - データは HTML 内に JS 配列として埋め込み

@@ -249,6 +249,35 @@ try {
   console.warn('Firebase init failed', e);
 }
 
+// ---- アクセス解析（GoatCounter）----
+// https://www.goatcounter.com/ でアカウントを作り、登録したコード（〇〇.goatcounter.com の〇〇）を
+// 下記に入れると有効になる。プレースホルダーのままなら何も送信しない。設定手順は README.md を参照。
+const GOATCOUNTER_CODE = "YOUR_CODE";
+const analyticsQueue = [];
+let analyticsReady = false;
+if (GOATCOUNTER_CODE !== "YOUR_CODE") {
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.dataset.goatcounter = `https://${GOATCOUNTER_CODE}.goatcounter.com/count`;
+  // ページビューは init() で手動送信する（共有リンク経由かどうかを区別するため）
+  s.dataset.goatcounterSettings = JSON.stringify({ no_onload: true });
+  s.onload = () => {
+    analyticsReady = true;
+    analyticsQueue.splice(0).forEach(sendAnalytics);
+  };
+  document.head.appendChild(s);
+}
+function sendAnalytics(payload){
+  try { window.goatcounter && window.goatcounter.count(payload); } catch (e) { console.warn('analytics failed', e); }
+}
+// name はダッシュボード上のパス名になる（例: "answer/scream"）。event:true のものは「イベント」として集計される
+function track(name, { event = true } = {}){
+  if (GOATCOUNTER_CODE === "YOUR_CODE") return;
+  const payload = { path: name, title: name, event };
+  if (analyticsReady) sendAnalytics(payload); else analyticsQueue.push(payload);
+}
+
 let shareOptIn = true;
 try {
   const saved = localStorage.getItem('shareOptIn');
@@ -404,6 +433,7 @@ function showShareCardModal(canvas, work){
     a.href = dataUrl;
     a.download = `ogiti-art-${work.id}.png`;
     a.click();
+    track(`share-card-save/${work.id}`);
   };
 
   overlay.querySelector('#modalCopyBtn').onclick = async (e) => {
@@ -411,6 +441,7 @@ function showShareCardModal(canvas, work){
     try {
       await navigator.clipboard.writeText(deepLink);
       btn.textContent = 'コピーしました';
+      track(`share-card-copy/${work.id}`);
     } catch {
       btn.textContent = 'コピーできませんでした';
     }
@@ -429,6 +460,7 @@ function showShareCardModal(canvas, work){
           throw new Error('cannot share files on this device');
         }
         await navigator.share({ files: [file], text: shareText, url: deepLink });
+        track(`share-card-native/${work.id}`);
       } catch (e) {
         console.warn('share failed', e);
       }
@@ -726,7 +758,7 @@ function renderStart(){
     </div>
     <footer>画像出典：パブリックドメイン作品（Wikimedia Commons）</footer>
   `;
-  document.getElementById('startBtn').onclick = renderPicker;
+  document.getElementById('startBtn').onclick = () => { track('start'); renderPicker(); };
 }
 
 function renderPicker(){
@@ -815,6 +847,9 @@ function renderQuestion(w, opts = {}){
     const val = raw || "（未回答）";
     answers[w.id] = val;
     saveAnswers();
+    track(`answer/${w.id}`);
+    if (fromShare) track(`share-landing-answer/${w.id}`);
+    if (answeredCount() === WORKS.length) track('all-done');
     if (raw && shareOptIn) {
       submitCommunityAnswer(w.id, raw).then(id => { if (id) markMine(id); });
     }
@@ -864,6 +899,7 @@ function renderAnswerView(w, opts = {}){
     try {
       const canvas = await generateShareCard(w, answers[w.id]);
       showShareCardModal(canvas, w);
+      track(`share-card-open/${w.id}`);
     } catch (err) {
       console.warn('failed to generate share card', err);
     } finally {
@@ -893,14 +929,16 @@ function renderResult(){
     <div class="card">
       ${rows}
       <div class="share-row">
-        <a class="share-btn share-x" href="${xShareUrl}" target="_blank" rel="noopener">𝕏でシェア</a>
-        <a class="share-btn share-line" href="${lineShareUrl}" target="_blank" rel="noopener">LINEでシェア</a>
+        <a class="share-btn share-x" id="shareXBtn" href="${xShareUrl}" target="_blank" rel="noopener">𝕏でシェア</a>
+        <a class="share-btn share-line" id="shareLineBtn" href="${lineShareUrl}" target="_blank" rel="noopener">LINEでシェア</a>
         <button class="share-btn share-copy" id="copyLinkBtn" type="button">リンクをコピー</button>
       </div>
       <button class="ghost" id="backToPickerBtn2" type="button">作品一覧に戻る</button>
       <button class="primary" id="restartBtn">最初からやり直す</button>
     </div>
   `;
+  document.getElementById('shareXBtn').onclick = () => track('result-share-x');
+  document.getElementById('shareLineBtn').onclick = () => track('result-share-line');
   document.getElementById('backToPickerBtn2').onclick = renderPicker;
   document.getElementById('restartBtn').onclick = () => { answers = {}; saveAnswers(); renderStart(); };
   document.getElementById('copyLinkBtn').onclick = async (e) => {
@@ -908,6 +946,7 @@ function renderResult(){
     try {
       await navigator.clipboard.writeText(shareUrl);
       btn.textContent = 'コピーしました';
+      track('result-share-copy');
     } catch {
       btn.textContent = 'コピーできませんでした';
     }
@@ -918,6 +957,8 @@ function renderResult(){
 (function init(){
   const sharedWorkId = new URLSearchParams(location.search).get('w');
   const sharedWork = WORKS.find(w => w.id === sharedWorkId);
+  // ページビュー: 通常訪問は "/"、共有リンク経由は "share-landing/<作品ID>" として記録
+  track(sharedWork ? `share-landing/${sharedWork.id}` : location.pathname, { event: false });
   if (sharedWork) {
     renderQuestion(sharedWork, { fromShare: true });
   } else {

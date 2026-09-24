@@ -137,7 +137,16 @@ answers/{autoId}
 - `images/hero-banner.jpg`: 同じコラージュ構図の文字なし版で、トップ画面の
   ヒービジュアルとして使用（og-imageとは別画像、テキスト二重表示を避けるため）
 
-### 4.5 デザイン
+### 4.5 アクセス解析（GoatCounter、任意機能）
+- `GOATCOUNTER_CODE` を設定すると `gc.zgo.at/count.js` を動的に読み込み、`track(name)` で
+  ページビューとイベントを送信する（プレースホルダーのままなら何も読み込まない・送信しない）
+- 自動ページビューは無効化（`no_onload`）し、`init()` で通常訪問は `/`、共有リンク経由は
+  `share-landing/<作品ID>` として手動送信
+- イベント: `start` / `answer/<id>` / `share-landing-answer/<id>` / `all-done` /
+  `share-card-open|native|save|copy/<id>` / `result-share-x|line|copy`（一覧はREADME参照）
+- スクリプト読み込み前に発生したイベントはキューに貯めて、読み込み後にまとめて送信
+
+### 4.6 デザイン
 - カラートークン（`--bg` `--card` `--ink` `--sub` `--accent` `--line` `--shadow`
   `--frame-ring`）をCSS変数化し、ライト/ダーク（`prefers-color-scheme`もしくは
   `data-theme`属性）両対応
@@ -149,7 +158,8 @@ answers/{autoId}
 
 - **構成**: `index.html` 1ファイルで完結（ビルド不要）。GitHub Pagesでそのまま公開
 - **依存**: 実行時はCDN経由でFirebase compat SDK（`firebase-app-compat.js` /
-  `firebase-firestore-compat.js`, v10.7.1）とGoogle Fontsを読み込むのみ。
+  `firebase-firestore-compat.js`, v10.7.1）とGoogle Fonts、（設定時のみ）GoatCounterの
+  `count.js` を読み込むのみ。
   外部JSライブラリのバンドルなし
 - **開発時のみの依存**（`package.json` の `devDependencies`）: `sharp`
   （`scripts/fetch-images.mjs` の画像リサイズ処理専用。サイト自体の動作には不要）
