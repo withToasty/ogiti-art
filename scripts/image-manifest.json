@@ -11,10 +11,10 @@
     { "id": "gulf-stream", "query": "The Gulf Stream Winslow Homer Metropolitan Museum", "file": "Winslow Homer - The Gulf Stream - Metropolitan Museum of Art.jpg" },
     { "id": "nightmare", "query": "The Nightmare Henry Fuseli Detroit Institute of Arts", "file": "John Henry Fuseli - The NightmareFXD.jpg" },
     { "id": "liberty", "query": "Liberty Leading the People Delacroix Louvre", "file": "Eugène Delacroix - La liberté guidant le peuple.jpg" },
-    { "id": "american-gothic", "query": "American Gothic Grant Wood Art Institute Chicago", "file": null },
-    { "id": "las-meninas", "query": "Las Meninas Velazquez Museo del Prado", "file": null },
-    { "id": "whistlers-mother", "query": "Whistler's Mother Arrangement in Grey and Black Musee d'Orsay", "file": null },
-    { "id": "night-watch", "query": "The Night Watch Rembrandt Rijksmuseum", "file": null },
-    { "id": "grande-jatte", "query": "A Sunday on La Grande Jatte Seurat Art Institute Chicago", "file": null }
+    { "id": "american-gothic", "query": "American Gothic Grant Wood Art Institute Chicago", "file": "Grant Wood - American Gothic - Google Art Project.jpg" },
+    { "id": "las-meninas", "query": "Las Meninas Velazquez Museo del Prado", "file": "Las Meninas 01.jpg" },
+    { "id": "whistlers-mother", "query": "Whistler's Mother Arrangement in Grey and Black Musee d'Orsay", "file": "Whistlers Mother high res.jpg" },
+    { "id": "night-watch", "query": "The Night Watch Rembrandt Rijksmuseum", "file": "The Nightwatch by Rembrandt - Rijksmuseum.jpg" },
+    { "id": "grande-jatte", "query": "A Sunday on La Grande Jatte Seurat Art Institute Chicago", "file": "Georges Seurat - Un dimanche après-midi à l'île de la Grande Jatte.jpg" }
   ]
 }
