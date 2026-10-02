@@ -363,7 +363,7 @@ async function generateShareCard(w, guessText){
 
   ctx.font = '400 30px "Noto Sans JP", sans-serif';
   ctx.fillStyle = sub;
-  ctx.fillText(`正解：${w.title}`, padX, y);
+  ctx.fillText(`本当のタイトル：${w.title}`, padX, y);
   y += 42;
   ctx.font = '400 26px "Noto Sans JP", sans-serif';
   ctx.fillText(`${w.artist} ／ ${w.year}`, padX, y);
@@ -835,7 +835,7 @@ function renderAnswerView(w, opts = {}){
       <div class="frame" id="frame"></div>
       <div class="your-guess">あなたの回答：${answers[w.id]}</div>
       <div class="answer-box">
-        <div class="real-title">正解：${w.title}</div>
+        <div class="real-title">本当のタイトル：${w.title}</div>
         <div class="meta">${w.artist} ／ ${w.year}</div>
         <div class="desc">${w.desc}</div>
       </div>
